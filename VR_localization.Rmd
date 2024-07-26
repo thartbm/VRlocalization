@@ -23,6 +23,11 @@ Load local scripts:
 source('R/data.R')
 source('R/statistics.R')
 ```
+# synchronize data:
+
+```{r}
+getCurrentData()
+```
 
 
 # Reach to Target
