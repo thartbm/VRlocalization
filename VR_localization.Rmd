@@ -35,7 +35,7 @@ getCurrentData()
 ## Hand (Experiment 1)
 ### 30 degrees
 ```{r}
-hand_30 <- read.csv("hand_30.csv")
+hand_30 <- read.csv("data/hand_30.csv")
 #ppid from int to chr
 hand_30$ppid <- as.character(hand_30$ppid)
 #calculate angular deviation
@@ -79,7 +79,7 @@ rotated_30$sequential_trials <- rotated_30$sequential_trials + 26
 
 ### 60 degrees
 ```{r}
-hand_60 <- read.csv("hand_60.csv")
+hand_60 <- read.csv("data/hand_60.csv")
 #ppid from int to chr
 hand_60$ppid <- as.character(hand_60$ppid)
 
@@ -121,7 +121,7 @@ rotated_hand$sequential_trials <- rotated_hand$sequential_trials + 26
 ## Pen (Experiment 2)
 Load aligned data
 ```{r}
-data_toola <- "pen_aligned.csv"
+data_toola <- "data/pen_aligned.csv"
 pen_data <- fread(data_toola)
 #ppid from int to chr
 hand_60$ppid <- as.character(hand_60$ppid)
@@ -141,13 +141,14 @@ aligned_pen <- pen_data %>%
 # Create a new variable with consecutive trial numbers
 aligned_pen$sequential_trials <- 1:(nrow(aligned_pen))
 
-#ROTATED 
-#Pen Rotated reaches first 100 trials
-data_toolhand <- "pen_rotated.csv"
-pen_train <- fread(data_toolhand)
 ```
 Load rotated data
 ```{r}
+#ROTATED 
+#Pen Rotated reaches first 100 trials
+data_toolhand <- "data/pen_rotated.csv"
+pen_train <- fread(data_toolhand)
+
 #ROTATED filter first 100 trials
 #deviation = pen_3cm_out_angle - target_angle
 rotated_pen <- pen_train %>%
@@ -166,7 +167,7 @@ rotated_pen$sequential_trials <- 1:(nrow(rotated_pen))
 rotated_pen$sequential_trials <- rotated_pen$sequential_trials + 26
 
 #ROTATED HAND REACHES AFTER TRAINING WITH PEN
-data_toolhand <- "pen_rotated.csv"
+data_toolhand <- "data/pen_rotated.csv"
 pen_hand <- fread(data_toolhand)
 
 rotated <- pen_hand %>%
@@ -399,7 +400,7 @@ No Pen/ No Cursor
 Since aligned and rotated sessions were part of two jsons, start off by loading aligned sessions and create new dataframe
 ```{r}
 #Load aligned session data and filter for only nocursor trials and exclude practice block
-data_toola <- "pen_aligned.csv"
+data_toola <- "data/pen_aligned.csv"
 A_NoCursor_pen <- fread(data_toola)%>%
   filter(type=="nocursor", block_num >8)
 #Create subtypes to differentiate between no cursor and no pen reaches before training
@@ -422,7 +423,7 @@ ANoCursor_summary <- A_NoCursor_pen %>%
 Load data from rotated session 
 ```{r}
 #Load rotated session data and filter for only nocursor trials and exclude practice block
-data_penr <- "pen_rotated.csv"
+data_penr <- "data/pen_rotated.csv"
 Rnocursor_pen <- fread(data_penr)%>%
   filter(type=="nocursor")
 #Create new subtypes and calculate angular reach deviation
@@ -679,7 +680,7 @@ Pen and hand localization
 Aligned Session
 ```{r}
 #Filter for only localization trials and exclude practice
-data_toola <- read.csv("pen_aligned.csv")
+data_toola <- read.csv("data/pen_aligned.csv")
 Alocalization_pen <- data_toola %>%
   filter(type=="localization", block_num >8)
 #Calculate change in localization
@@ -703,7 +704,7 @@ Alocalization_sum <- Alocalization_pen %>%
 Rotated session
 ```{r}
 #Filter for localization trials
-data_penr <- read.csv("pen_rotated.csv")
+data_penr <- read.csv("data/pen_rotated.csv")
 Rlocalization_pen <- data_penr %>%
   filter(type=="localization")
 #Calculate change in localization
@@ -853,7 +854,7 @@ hand_rot60 <- hand_30 %>%
   ))
 
 #Exp2 rotated pen
-data_toolhand <- "pen_rotated.csv"
+data_toolhand <- "data/pen_rotated.csv"
 pen_rot <- fread(data_toolhand)
 pen_rotated <- pen_rot %>%
   filter(between(trial_num, 2, 101) & !(between(trial_num, 10, 97))) %>%
@@ -869,7 +870,7 @@ pen_rotated <- pen_rotated %>%
   mutate(ppid = as.character(ppid))
 
 #Exp2 rotated hand after training with pen
-data_tool <- "pen_rotated.csv"
+data_tool <- "data/pen_rotated.csv"
 hand_trainpen <- fread(data_tool)
 rotated_hand <- hand_trainpen %>%
   filter(type=='rotated'& between(trial_num, 391, 438) & !(between(trial_num, 399, 434))) %>%
