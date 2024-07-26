@@ -1,0 +1,1178 @@
+---
+title: "Effects of tool use and perturbation during motor adaptation on hand localization in immersive virtual reality"
+author: "Maryum Khan"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+Load packages
+```{r,include=FALSE}
+library(data.table)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(dplyr) 
+library(magrittr)
+library(tidyr)
+```
+
+# Reach to Target
+
+## Hand (Experiment 1)
+### 30 degrees
+```{r}
+hand_30 <- read.csv("hand_30.csv")
+#ppid from int to chr
+hand_30$ppid <- as.character(hand_30$ppid)
+#calculate angular deviation
+deviation <- hand_30$cursor_3cm_out_angle - hand_30$target_angle
+hand_30$deviation <- hand_30$cursor_3cm_out_angle - hand_30$target_angle
+
+##Aligned session
+#Filter last 3 blocks of aligned hand reaches and add summary statistics
+aligned_30 <- hand_30 %>%
+  filter(type=='aligned', block_num > 19)%>%
+  mutate(type = 'aligned_30') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(aligned_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+#reorder the aligned trials so they appear in sequence
+aligned_30$sequential_trials <- 1:(nrow(aligned_30))
+
+##Rotated session
+#Filter first 100 rotated hand reaches and add summary statistics
+#Deviation = cursor_3cm_out_angle - target_angle
+rotated_30 <- hand_30 %>%
+  filter(type=='rotated', block_num < 30)%>%
+  mutate(type = 'rotated_30') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(rotated_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+# Re-number the trial numbers starting from 1
+rotated_30$sequential_trials <- 1:(nrow(rotated_30))
+rotated_30$sequential_trials <- rotated_30$sequential_trials + 26
+```
+
+### 60 degrees
+```{r}
+hand_60 <- read.csv("hand_60.csv")
+#ppid from int to chr
+hand_60$ppid <- as.character(hand_60$ppid)
+
+##Aligned session
+#Filter last 3 blocks of aligned hand reaches and add summary statistics
+aligned_hand <- hand_60 %>%
+  filter(type=='aligned', block_num > 19)%>%
+  mutate(type = 'aligned_hand') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(aligned_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+#reorder the aligned trials so they appear in sequence
+aligned_hand$sequential_trials <- 1:(nrow(aligned_hand))
+
+##Rotated session
+#Filter first 100 rotated hand reaches and add summary statistics
+#Deviation = cursor_3cm_out_angle - target_angle
+rotated_hand <- hand_60 %>%
+  filter(type=='rotated', block_num < 30)%>%
+  mutate(type = 'rotated_hand') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(rotated_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+# Re-number the trial numbers starting from 1
+rotated_hand$sequential_trials <- 1:(nrow(rotated_hand))
+rotated_hand$sequential_trials <- rotated_hand$sequential_trials + 26
+```
+
+## Pen (Experiment 2)
+Load aligned data
+```{r}
+data_toola <- "pen_aligned.csv"
+pen_data <- fread(data_toola)
+#ppid from int to chr
+hand_60$ppid <- as.character(hand_60$ppid)
+
+#Filter last 3 blocks of aligned pen reaches (deviation = pen_3cm_out_angle - target angle )
+aligned_pen <- pen_data %>%
+  filter(type=='aligned', block_num >43)%>%
+  mutate(type = 'aligned_pen') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(aligned_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+# Create a new variable with consecutive trial numbers
+aligned_pen$sequential_trials <- 1:(nrow(aligned_pen))
+
+#ROTATED 
+#Pen Rotated reaches first 100 trials
+data_toolhand <- "pen_rotated.csv"
+pen_train <- fread(data_toolhand)
+```
+Load rotated data
+```{r}
+#ROTATED filter first 100 trials
+#deviation = pen_3cm_out_angle - target_angle
+rotated_pen <- pen_train %>%
+  filter(type=='rotated', block_num < 3) %>%
+  mutate(type = 'rotated_pen') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(rotated_mean=mean(deviation,na.rm = TRUE),
+            reaches_median=median(deviation,na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+# Re-number the trial numbers starting from 1
+rotated_pen$sequential_trials <- 1:(nrow(rotated_pen))
+rotated_pen$sequential_trials <- rotated_pen$sequential_trials + 26
+
+#ROTATED HAND REACHES AFTER TRAINING WITH PEN
+data_toolhand <- "pen_rotated.csv"
+pen_hand <- fread(data_toolhand)
+
+rotated <- pen_hand %>%
+  filter(type=='rotated', block_num > 46)
+
+#rotated_diff <- rotated$hand_3cm_out_angle - rotated$target_angle
+rotated$deviation <- rotated$hand_3cm_out_angle - rotated$target_angle
+rotated <- rotated %>%
+  mutate(type = 'rotated_hand_pen') %>% 
+  group_by(experiment, type, trial_num)%>%
+  summarise(rotated_mean=mean(deviation, na.rm = TRUE),
+            reaches_median=median(deviation, na.rm = TRUE),
+            sd_err = sd(deviation, na.rm = TRUE),
+            n=n(),.groups = 'drop') %>%
+  mutate(lower_ci = reaches_median - qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)),
+         upper_ci = reaches_median + qt(1 - (0.05/2), n - 1) * (sd_err / sqrt(n)))
+
+# Re-number the trial numbers starting from 1
+rotated$sequential_trials <- 1:(nrow(rotated))
+rotated$sequential_trials <- rotated$sequential_trials + 130
+```
+
+## Plot
+Now that all variables have been defined, plot learning by combining all trial types
+```{r}
+# Combine aligned and rotated datasets into one for ribbon
+combined_ribbons <- bind_rows(
+  mutate(aligned_hand, source = "hand"),
+  mutate(aligned_30, source = "hand"),
+  mutate(aligned_pen, source = "pen"),
+  mutate(rotated_hand, source = "hand"),
+   mutate(rotated_30, source = "hand"),
+  mutate(rotated_pen, source = "pen"),
+  mutate(rotated, source = "hand")
+)
+
+#Plot learning
+reaches <- ggplot(combined_ribbons, aes(x = sequential_trials, y = reaches_median,
+                                        color = type, fill = type, shape = type)) +
+  geom_point() +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.6, color = NA) 
+
+#Change point shape to differentiate between hand and pen trial types and adjust colors
+reaches <- reaches +
+  scale_shape_manual(values = c("aligned_hand" = 20, "rotated_hand" = 20,
+                                "aligned_30" = 20, "rotated_30" = 20,
+                                "aligned_pen" = 5, "rotated_pen" = 5, "rotated_hand_pen" = 20))+
+  scale_color_manual(values = c("aligned_hand" = "darkmagenta", "aligned_30" = "violetred2", "aligned_pen" = "dodgerblue2",
+                                "rotated_hand" = "darkmagenta", "rotated_30" = "violetred2", "rotated_pen" = "dodgerblue2",
+                                "rotated_hand_pen" = "dodgerblue2")) +
+  scale_fill_manual(values = c("aligned_hand" = "darkmagenta","aligned_30" = "violetred2", "aligned_pen" = "dodgerblue2",
+                               "rotated_hand" = "darkmagenta","rotated_30" = "violetred2", "rotated_pen" = "dodgerblue2",
+                               "rotated_hand_pen" = "dodgerblue2"))
+
+#Adjust x and y axis and add horizontal lines
+reaches <- reaches +
+  theme_classic()+
+  theme(legend.position = "none")+
+  geom_hline(
+    yintercept = 30, linewidth = 0.4,
+    colour = "#CCCCCC", linetype = "solid"
+  )+
+  geom_hline(
+    yintercept = 0, linewidth = 2.0,
+    colour = "gray70", linetype = "solid", alpha = 0.2
+  )+
+  theme(text = element_text(size = 11))+
+  labs(
+    x = "Phases",
+    y = "Median angular reach deviation (°)"
+    )+
+  scale_y_continuous(
+    limits = c(-15, 60),
+    breaks = c(0, -15, 15, 30, 45, 60),
+    labels = c(0, -15, 15, 30, 45, 60)
+  )+
+  scale_x_continuous(
+    breaks = c(12, 80, 150),
+    labels = c(1, 2, 3)
+  )+
+  annotate("text", x = 6, y = -10, hjust = 0, vjust = 1, 
+           label = "Aligned", color = "gray50", size = 3.5)+
+  annotate("text", x = 75, y = -10, hjust = 0, vjust = 1, 
+           label = "Rotated", color = "gray50", size = 3.5)+
+  annotate("text", x = 134, y = -9, hjust = 0, vjust = 1, 
+           label = "Rotated hand after\ntraining with pen", color = "gray50", size = 3.5)
+  
+print(reaches)
+```
+
+The y-axis represents the median angular reach deviation which was calculated by subtracting target angle from the hand/pen 3cm out angle (peak velocity). 
+Phase 1 = last 3 sets (24 trials) for the aligned session. 
+Phase 2 = first 100 rotated trials
+Phase 3 = 32 trials from rotated hand after training with the pen
+
+# No Cursor/No Pen Reaches
+
+## Hand (Experiment 1)
+### 30 degrees
+```{r}
+#Filter df for only nocursor trials and exclude practice block
+data <- hand_30 %>%
+ filter(type=="nocursor", block_num >7)
+#Create subtype to differentiate between no cursor trials before and after training
+NoCursor_30 <- data %>%
+  mutate(nocursor_type = case_when(
+    trial_num <= 191 ~ "aligned hand 30",
+    trial_num >= 343 ~ "rotated hand 30"))
+#Calculate the angular reach deviation by subtracting endpoint and target angle
+nocursor_diff <- (NoCursor_30$hand_final_angle - NoCursor_30$target_angle)*(-1)
+NoCursor_30$nocursor_diff <- nocursor_diff
+
+#Summary statistics
+nocursor_30 <- NoCursor_30 %>%
+  group_by(ppid,nocursor_type) %>%
+  summarise(nocursor_median = median(nocursor_diff, na.rm = TRUE),
+            nocursor_mean = mean(nocursor_diff, na.rm = TRUE),
+            nocursor_sd = sd(nocursor_diff, na.rm = TRUE)) 
+```
+
+
+### 60 degrees
+```{r}
+#Filter df for only nocursor trials and exclude practice block
+data_60 <- hand_60 %>%
+ filter(type=="nocursor", block_num >7)
+#Create subtype to differentiate between no cursor trials before and after training
+NoCursor_60 <- data_60 %>%
+  mutate(nocursor_type = case_when(
+    trial_num <= 191 ~ "aligned hand 60",
+    trial_num >= 343 ~ "rotated hand 60"))
+#Calculate the angular reach deviation by subtracting endpoint and target angle
+nocursor_diff <- (NoCursor_60$hand_final_angle - NoCursor_60$target_angle)*(-1)
+NoCursor_60$nocursor_diff <- nocursor_diff
+
+#Summary statistics
+nocursor_60 <- NoCursor_60 %>%
+  group_by(ppid,nocursor_type) %>%
+  summarise(nocursor_median = median(nocursor_diff, na.rm = TRUE),
+            nocursor_mean = mean(nocursor_diff, na.rm = TRUE),
+            nocursor_sd = sd(nocursor_diff, na.rm = TRUE)) 
+```
+Now that we've calculated the medians, plot angular reach deviations for no cursor
+```{r}
+filtered <- bind_rows(nocursor_30, nocursor_60)
+
+# Define the order of no cursor types
+nocursor_order <- c("aligned hand 30", "rotated hand 30", "aligned hand 60", "rotated hand 60")
+# Use factor to set the order of bars on the plot
+filtered <- filtered %>%
+  mutate(nocursor_type = factor(nocursor_type, levels = nocursor_order))
+
+hand_nocursor <- filtered %>% 
+  ggplot(aes(x=nocursor_type, y=nocursor_median, fill=nocursor_type))+
+  geom_boxplot(width=0.4)+
+  geom_point(aes(fill=nocursor_type),size=1.5,shape=21, alpha=0.5)+
+  geom_line(aes(group=ppid), color='gray', alpha=0.4)+
+  theme_classic()+
+#Select custom bar colors
+  scale_color_manual(values = c("aligned hand 30"="violetred2", "rotated hand 30"="violetred2", "aligned hand 60"="darkmagenta", "rotated hand 60"="darkmagenta", alpha = 0.9))+
+  scale_fill_manual(values = c("aligned hand 30"="violetred2", "rotated hand 30"="violetred2", "aligned hand 60"="darkmagenta", "rotated hand 60"="darkmagenta", alpha = 0.9))+
+#Adjust plot layout, font size, x and y axis
+  theme(
+    legend.position="none",
+    axis.text = element_text(size = 11), 
+    axis.title.y = element_text(size = 11)
+  ) +
+  xlab("")+
+  ylab("Median no cursor deviation (°)")+
+  geom_hline(
+    yintercept = c(0), linewidth = 0.4,
+    colour = "#999999", linetype = "solid"
+  ) +
+  geom_hline(
+    yintercept = c(15), linewidth = 0.4,
+    colour = "#999999", linetype = "dotted"
+  ) +
+    scale_x_discrete(labels = c("aligned hand 30" = "Aligned", "aligned hand 60" = "Aligned",
+                              "rotated hand 30" = "Rotated", "rotated hand 60" = "Rotated"))+
+  scale_y_continuous(
+    limits = c(-20, 50),
+    breaks = c(0, -15, 15, 30, 45),
+    labels = c(0, -15, 15, 30, 45)
+  )+
+  theme(text = element_text(size = 11))+
+  theme(axis.text.x = element_text(color = "black"))+
+  theme(axis.text.y = element_text(color = "black"))+
+  annotate("text", x = 1.4, y = -17, hjust = 0, vjust = 1, 
+           label = "30°", color = "gray50", size = 3.5)+
+  annotate("text", x = 3.5, y = -17, hjust = 0, vjust = 1, 
+           label = "60°", color = "gray50", size = 3.5)
+ 
+print(hand_nocursor)
+```
+
+### t-test
+
+Run paired t-tests to check for significance between no cursor reaches before and after training
+```{r}
+#Comparison stats
+#paired t-test 30 degrees
+naligned_group <- nocursor_30 %>%
+  filter(nocursor_type == "aligned hand 30") %>%
+  pull(nocursor_mean)
+
+nrotated_group <- nocursor_30 %>%
+  filter(nocursor_type == "rotated hand 30") %>%
+  pull(nocursor_mean)
+
+ndiffs_30 <- nrotated_group - naligned_group
+t.test(ndiffs_30)
+
+
+#paired t-test 60 degrees
+naligned_group <- nocursor_60 %>%
+  filter(nocursor_type == "aligned hand 60") %>%
+  pull(nocursor_mean)
+
+nrotated_group <- nocursor_60 %>%
+  filter(nocursor_type == "rotated hand 60") %>%
+  pull(nocursor_mean)
+
+ndiffs_60 <- nrotated_group - naligned_group
+t.test(ndiffs_60)
+```
+
+## Pen (Experiment 2)
+No Pen/ No Cursor
+Since aligned and rotated sessions were part of two jsons, start off by loading aligned sessions and create new dataframe
+```{r}
+#Load aligned session data and filter for only nocursor trials and exclude practice block
+data_toola <- "pen_aligned.csv"
+A_NoCursor_pen <- fread(data_toola)%>%
+  filter(type=="nocursor", block_num >8)
+#Create subtypes to differentiate between no cursor and no pen reaches before training
+A_NoCursor_pen <- A_NoCursor_pen %>%
+  mutate(nocursor_type = case_when(
+    block_num %in% c(21,36,51) ~ "aligned pen",
+    block_num %in% c(18,33,48) ~ "aligned hand",
+    TRUE ~ "other"),
+  nocursor_diff = case_when(
+    nocursor_type == "aligned pen" ~ pen_final_angle - target_angle,
+    nocursor_type == "aligned hand" ~ hand_final_angle - target_angle))
+#Summary statistics
+ANoCursor_summary <- A_NoCursor_pen %>%
+  group_by(ppid,nocursor_type) %>%
+  summarise(nocursor_median = median(nocursor_diff, na.rm = TRUE),
+            nocursor_mean = mean(nocursor_diff, na.rm = TRUE),
+            nocursor_sd = sd(nocursor_diff, na.rm = TRUE))
+
+```
+Load data from rotated session 
+```{r}
+#Load rotated session data and filter for only nocursor trials and exclude practice block
+data_penr <- "pen_rotated.csv"
+Rnocursor_pen <- fread(data_penr)%>%
+  filter(type=="nocursor")
+#Create new subtypes and calculate angular reach deviation
+Rnocursor_pen <- Rnocursor_pen %>%
+  mutate(nocursor_type = case_when(
+    block_num %in% c(15,30,45) ~ "rotated pen",
+    block_num %in% c(12,27,42) ~ "rotated hand",
+    block_num %in% c(50) ~ "rotated hand-pen"),
+    nocursor_diff = case_when(
+      nocursor_type == "rotated pen" ~ (pen_final_angle - target_angle)*(-1),
+      nocursor_type == "rotated hand" ~ (hand_final_angle - target_angle)*(-1),
+      nocursor_type == "rotated hand-pen" ~ (hand_final_angle - target_angle)*(-1)))
+#Summary statistics
+RNoCursor_summary <- Rnocursor_pen %>%
+  group_by(ppid,nocursor_type) %>%
+  summarise(nocursor_median = median(nocursor_diff),
+            nocursor_mean = mean(nocursor_diff),
+            nocursor_sd = sd(nocursor_diff))
+
+```
+Plot no cursor and no pen reaches with individual data
+```{r}
+#Combine aligned and rotated data
+combined_dataset <- rbind(ANoCursor_summary, RNoCursor_summary)
+#Reorder the order of bars displayed on the plot
+order_of_bars <- c("aligned pen", "rotated pen", "aligned hand", "rotated hand", "rotated hand-pen")
+combined_dataset$category <- factor(combined_dataset$nocursor_type, levels = order_of_bars)
+#Assign custom colors to the bars
+bar_colors <- c("skyblue1","steelblue2","skyblue1","steelblue","steelblue2")
+#Plot using ggplot
+Combine_nocursor <- combined_dataset %>% 
+  ggplot(aes(x=category, y=nocursor_median, fill=nocursor_type))+
+  geom_boxplot(width = 0.4)+
+  geom_point(aes(fill=category),size=1.5,shape=21, alpha=0.5)+
+  geom_line(aes(group=ppid), color='gray', alpha=0.4)+
+  scale_fill_manual(values = alpha(bar_colors, alpha=0.9))+
+#Format plot by adding lines, adjusting font size, and x and y axis
+  theme_classic()+
+  geom_hline(
+    yintercept = c(0), linewidth = 0.4,
+    colour = "#999999", linetype = "solid"
+  ) +
+  geom_hline(
+    yintercept = c(15), linewidth = 0.4,
+    colour = "#999999", linetype = "dotted"
+  ) +
+  xlab("")+
+  ylab("Median no cursor deviation (°)")+
+  geom_vline(xintercept = c(2.5), color = "light gray", linetype = "solid", size = 0.5) +
+  geom_vline(xintercept = c(4.5), color = "light gray", linetype = "solid", size = 0.5) +
+  scale_x_discrete(labels=c('Aligned', 'Rotated', 'Aligned','Rotated', 'Rotated-pen'))+
+  theme(
+    legend.position="none",
+    axis.text = element_text(size = 11), 
+    axis.title.y = element_text(size = 11)
+  ) +
+  theme(axis.text.x = element_blank())+
+  scale_y_continuous(
+    limits = c(-20, 50),
+    breaks = c(0, -15, 15, 30, 45),
+    labels = c(0, -15, 15, 30, 45)
+  )+
+  theme(text = element_text(size = 11))+
+  theme(axis.text.x = element_text(color = "black"))+
+  theme(axis.text.y = element_text(color = "black"))+
+  annotate("text", x = 1.4, y = 37, hjust = 0, vjust = 1, 
+           label = "Pen", color = "gray50", size = 3.5)+
+  annotate("text", x = 3.4, y = 37, hjust = 0, vjust = 1, 
+           label = "Hand", color = "gray50", size = 3.5)+
+  annotate("text", x = 4.65, y = 39, hjust = 0, vjust = 1, 
+           label = "Hand after \ntraining with pen", color = "gray50", size = 3.5)
+  
+print(Combine_nocursor)
+```
+
+### t-test
+
+Run paired t-tests between aligned and rotated to check for significance between the two types among the different groups
+```{r}
+#Comparison stats
+#paired t-test
+rotated_hand <- RNoCursor_summary %>%
+  filter(nocursor_type == "rotated hand") %>%
+  pull(nocursor_median)
+
+rotated_pen <- RNoCursor_summary %>%
+  filter(nocursor_type == "rotated pen") %>%
+  pull(nocursor_median)
+
+aligned_hand <- ANoCursor_summary %>%
+  filter(nocursor_type == "aligned hand") %>%
+  pull(nocursor_median)
+
+aligned_pen <- ANoCursor_summary %>%
+  filter(nocursor_type == "aligned pen") %>%
+  pull(nocursor_median)
+
+#t-test for hand no cursor in pen trials
+diffs_hand <- rotated_hand - aligned_hand
+t.test(diffs_hand)
+
+#t-test for pen no cursor in pen trials
+diffs_pen <- rotated_pen - aligned_pen
+t.test(diffs_pen)
+```
+Now perform t-test between group differences to check for significance between groups
+```{r}
+#pen no cursor vs hand 30 degree
+test <- diffs_pen - ndiffs_30
+t.test(test)
+
+#pen no cursor vs hand after training with pen
+test <- diffs_pen - diffs_hand
+t.test(test)
+
+#hand after training with pen vs hand 30 degree
+test <- diffs_hand - ndiffs_30
+t.test(test)
+```
+
+# Localization
+
+## Hand (Experiment 1)
+### 30 degrees
+```{r}
+#filter for localization trials and exclude practice trials
+localization_30 <- hand_30 %>%
+  filter(type=="localization")%>%
+  filter(!(trial_num >= 19 & trial_num <= 26))
+#Create new subtype to differentiate between aligned and rotated trials
+Localization_30 <- localization_30 %>%
+  mutate(localization_type = case_when(
+    trial_num < 191 ~ "aligned hand 30",
+    trial_num > 194 ~ "rotated hand 30"))
+#Calculate change in localization
+local_arc_acqr <- Localization_30$localizing_angle - Localization_30$arc_aquired_angle
+Localization_30$local_diff <- local_arc_acqr
+#Summary statistics
+localization_sum30 <- Localization_30 %>%
+  group_by(ppid,localization_type) %>%
+  summarise(local_median = median(local_diff, na.rm = TRUE),
+            local_mean = mean(local_diff, na.rm = TRUE),
+            local_sd = sd(local_diff, na.rm = TRUE))
+```
+
+
+### 60 degrees
+```{r}
+#filter for localization trials and exclude practice trials
+localization_60 <- hand_60 %>%
+  filter(type=="localization")%>%
+  filter(!(trial_num >= 19 & trial_num <= 26))
+#Create new subtype to differentiate between aligned and rotated trials
+Localization_60 <- localization_60 %>%
+  mutate(localization_type = case_when(
+    trial_num < 191 ~ "aligned hand 60",
+    trial_num > 194 ~ "rotated hand 60"))
+#Calculate change in localization
+local_arc_acqr <- Localization_60$localizing_angle - Localization_60$arc_aquired_angle
+Localization_60$local_diff <- local_arc_acqr
+#Summary statistics
+localization_sum60 <- Localization_60 %>%
+  group_by(ppid,localization_type) %>%
+  summarise(local_median = median(local_diff, na.rm = TRUE),
+            local_mean = mean(local_diff, na.rm = TRUE),
+            local_sd = sd(local_diff, na.rm = TRUE))
+
+```
+
+Combine both 30 and 60 degree dataframes and plot hand localization
+```{r}
+filtered_data <- bind_rows(localization_sum30,localization_sum60)
+
+# Define the order of localization types
+localization_order <- c("aligned hand 30", "rotated hand 30", "aligned hand 60", "rotated hand 60")
+# Use factor to set the order of bars on the plot
+filtered_data <- filtered_data %>%
+  mutate(localization_type = factor(localization_type, levels = localization_order))
+
+hand_localization <- filtered_data %>% 
+  ggplot(aes(x=localization_type, y=local_median, fill=localization_type))+
+  geom_boxplot(width=0.4, alpha = 0.6)+
+  geom_point(aes(fill=localization_type),size=1.5,shape=21, alpha=0.5)+
+  geom_line(aes(group=ppid), color='gray', alpha=0.4)+
+  theme_classic()+
+  scale_color_manual(values = c("aligned hand 30"="violetred2", "rotated hand 30"="violetred2", "aligned hand 60"="darkmagenta", "rotated hand 60"="darkmagenta", alpha = 0.9))+
+  scale_fill_manual(values = c("aligned hand 30"="violetred2", "rotated hand 30"="violetred2", "aligned hand 60"="darkmagenta", "rotated hand 60"="darkmagenta", alpha = 0.9))+
+  theme(
+    legend.position="none",
+    axis.text = element_text(size = 11), 
+    axis.title.y = element_text(size = 11)
+  ) +
+  xlab("")+
+  ylab("End-effector localization (°)")+
+  geom_hline(
+    yintercept = c(0), linewidth = 0.4,
+    colour = "#999999", linetype = "solid"
+  ) +
+  geom_hline(
+    yintercept = c(15), linewidth = 0.4,
+    colour = "#999999", linetype = "dotted"
+  ) +
+  scale_x_discrete(labels = c("aligned hand 30" = "Aligned", "aligned hand 60" = "Aligned",
+                              "rotated hand 30" = "Rotated", "rotated hand 60" = "Rotated"))+
+  scale_y_continuous(
+    limits = c(-20, 50),
+    breaks = c(0, -15, 15, 30, 45),
+    labels = c(0, -15, 15, 30, 45)
+  )+
+  theme(text = element_text(size = 11))+
+  theme(axis.text.x = element_text(color = "black"))+
+  theme(axis.text.y = element_text(color = "black"))+
+  annotate("text", x = 1.4, y = -17, hjust = 0, vjust = 1, 
+           label = "30°", color = "gray50", size = 3.5)+
+  annotate("text", x = 3.6, y = -17, hjust = 0, vjust = 1, 
+           label = "60°", color = "gray50", size = 3.5)
+  
+
+print(hand_localization)
+```
+
+### t-test
+
+Perform paired t-test to determine if there are significant changes in localization after training
+```{r}
+#Comparison stats
+#paired t-test 30 degrees
+aligned_group <- localization_sum30 %>%
+  filter(localization_type == "aligned hand 30") %>%
+  pull(local_median)
+
+rotated_group <- localization_sum30 %>%
+  filter(localization_type == "rotated hand 30") %>%
+  pull(local_median)
+
+diffs_30 <- rotated_group - aligned_group
+t.test(diffs_30)
+#paired t-test 60 degrees
+aligned_group <- localization_sum60 %>%
+  filter(localization_type == "aligned hand 60") %>%
+  pull(local_median)
+
+rotated_group <- localization_sum60 %>%
+  filter(localization_type == "rotated hand 60") %>%
+  pull(local_median)
+
+diffs_60 <- rotated_group - aligned_group
+t.test(diffs_60)
+```
+
+## Pen (Experiment 2)
+
+Pen and hand localization
+Aligned Session
+```{r}
+#Filter for only localization trials and exclude practice
+data_toola <- read.csv("pen_aligned.csv")
+Alocalization_pen <- data_toola %>%
+  filter(type=="localization", block_num >8)
+#Calculate change in localization
+local_diff <- Alocalization_pen$localizing_angle - Alocalization_pen$arc_aquired_angle
+Alocalization_pen$local_diff <- Alocalization_pen$localizing_angle - Alocalization_pen$arc_aquired_angle
+#Create new subtype to differentiate pen and hand trials
+Alocalization_pen <- Alocalization_pen %>%
+    mutate(localization_type = case_when(
+    block_num %in% c(9,13,24,28,39,43) ~ "aligned pen",
+    block_num %in% c(11,15,26,30,41,45) ~ "aligned hand",
+    TRUE ~ "other"
+  ))
+#Summary statistics
+Alocalization_sum <- Alocalization_pen %>%
+  group_by(ppid,localization_type) %>%
+  summarise(local_median = median(local_diff, na.rm = TRUE),
+            local_mean = mean(local_diff, na.rm = TRUE),
+            local_sd = sd(local_diff, na.rm = TRUE))
+```
+
+Rotated session
+```{r}
+#Filter for localization trials
+data_penr <- read.csv("pen_rotated.csv")
+Rlocalization_pen <- data_penr %>%
+  filter(type=="localization")
+#Calculate change in localization
+local_diff <- Rlocalization_pen$localizing_angle - Rlocalization_pen$arc_aquired_angle
+Rlocalization_pen$local_diff <- Rlocalization_pen$localizing_angle - Rlocalization_pen$arc_aquired_angle
+#Create subtype to differentiate between hand and pen trials
+Rlocalization_pen <- Rlocalization_pen %>%
+  mutate(localization_type = case_when(
+    block_num %in% c(3,7,18,22,33,37) ~ "rotated pen",
+    block_num %in% c(5,9,20,24,35,39) ~ "rotated hand",
+    block_num %in% c(48) ~ "rotated pen hand",
+    TRUE ~ "other"
+  ))
+#Summary statistics
+Rlocalization_sum <- Rlocalization_pen %>%
+  group_by(ppid,localization_type) %>%
+  summarise(local_median = median(local_diff, na.rm = TRUE),
+            local_mean = mean(local_diff, na.rm = TRUE),
+            local_sd = sd(local_diff, na.rm = TRUE))
+```
+Combine both dataframes and plot Experiment 2 boxplots on one
+```{r}
+combined_dataset <- rbind(Alocalization_sum, Rlocalization_sum)
+order_of_bars <- c("aligned pen", "rotated pen", "aligned hand", "rotated hand", "rotated pen hand")
+combined_dataset$category <- factor(combined_dataset$localization_type, levels = order_of_bars)
+
+#Plot using ggplot and geom_boxplot
+bar_colors <- c("skyblue1","turquoise","skyblue1","turquoise","turquoise4")
+Combine_localization <- combined_dataset %>% 
+  ggplot(aes(x=category, y=local_median, fill=localization_type))+
+  geom_boxplot(width=0.4)+
+  geom_point(aes(fill=category),size=1.5,shape=21, alpha=0.5)+
+  geom_line(aes(group=ppid), color='gray', alpha=0.4)+
+  scale_fill_manual(values = alpha(bar_colors, alpha=0.9))+
+  theme_classic()+
+  geom_hline(
+    yintercept = c(0), linewidth = 0.4,
+    colour = "#999999", linetype = "solid"
+  ) +
+  geom_hline(
+    yintercept = c(15), linewidth = 0.4,
+    colour = "#999999", linetype = "dotted"
+  ) +
+  xlab("")+
+  ylab("End-effector localization (°)")+
+  geom_vline(xintercept = c(2.5), color = "light gray", linetype = "solid", size = 0.5) +
+  geom_vline(xintercept = c(4.5), color = "light gray", linetype = "solid", size = 0.5) +
+  scale_x_discrete(labels=c('Aligned', 'Rotated', 'Aligned','Rotated', 'Rotated-pen'))+
+  theme(
+    legend.position="none",
+    axis.text = element_text(size = 11), 
+    axis.title.y = element_text(size = 11)
+  ) +
+  # theme(axis.ticks.x = element_blank())+
+  theme(axis.text.x = element_blank())+
+  scale_y_continuous(
+    limits = c(-20, 50),
+    breaks = c(0, -15, 15, 30, 45),
+    labels = c(0, -15, 15, 30, 45)
+  )+
+  theme(text = element_text(size = 11))+
+  theme(axis.text.x = element_text(color = "black"))+
+  theme(axis.text.y = element_text(color = "black"))+
+  annotate("text", x = 1.3, y = 42, hjust = 0, vjust = 1, 
+           label = "Pen", color = "gray50", size = 3.5)+
+  annotate("text", x = 3.3, y = 42, hjust = 0, vjust = 1, 
+           label = "Hand", color = "gray50", size = 3.5)+
+  annotate("text", x = 4.65, y = 50, hjust = 0, vjust = 1, 
+           label = "Hand after \ntraining \nwith pen", color = "gray50", size = 3.5)
+
+print(Combine_localization)
+```
+
+### t-test
+
+Perform paired t-test to determine if there are significant changes in localization before and after training
+```{r}
+#Comparison stats
+#paired t-test
+rotated_hand <- Rlocalization_sum %>%
+  filter(localization_type == "rotated hand") %>%
+  pull(local_median)
+
+rotated_pen <- Rlocalization_sum %>%
+  filter(localization_type == "rotated pen") %>%
+  pull(local_median)
+
+aligned_hand <- Alocalization_sum %>%
+  filter(localization_type == "aligned hand") %>%
+  pull(local_median)
+
+aligned_pen <- Alocalization_sum %>%
+  filter(localization_type == "aligned pen") %>%
+  pull(local_median)
+
+#t-test for hand localization in pen trials
+diffs_hand <- rotated_hand - aligned_hand
+t.test(diffs_hand)
+
+#t-test for pen localization in pen trials
+diffs_pen <- rotated_pen - aligned_pen
+t.test(diffs_pen)
+```
+Now perform t-test between the differences to check for significance between different groups
+```{r}
+#30 degree hand vs pen 
+test <- diffs_pen - diffs_hand
+t.test(test)
+
+#pen vs hand after training with pen
+test <- diffs_pen - diffs_30
+t.test(test)
+
+#30 degree hand vs hand after training with pen
+test <- diffs_hand - diffs_30
+t.test(test)
+```
+
+# ANOVAS
+
+Our main analyses will consists of three groups: training the hand in Experiment 1, training the pen in Experiment 2, and training the hand after training the pen in Experiment 2
+
+## Reach-to-Target
+
+```{r}
+#ANOVA for rotated hand (Exp 1), rotated pen(Exp2), rotated hand after training with pen (Exp2)
+#Exp1 30 degrees rotated hand df for 3 trial sets (first, second, last)
+hand_rot30 <- hand_30 %>%
+  filter(type == 'rotated' & between(trial_num, 194, 293) & !(between(trial_num, 202, 289))) %>%
+  mutate(ppid = as.character(as.integer(ppid)))%>%
+  mutate(trial_set = case_when(
+    between(trial_num, 194, 197) ~ "1",
+    between(trial_num, 198, 201) ~ "2",
+    between(trial_num, 290, 293) ~ "3",
+    TRUE ~ NA_character_
+  ))
+
+#Exp1 60 degrees rotated hand df for 3 trial sets (first, second, last)
+hand_rot60 <- hand_30 %>%
+  filter(type == 'rotated' & between(trial_num, 194, 293) & !(between(trial_num, 202, 289))) %>%
+  mutate(ppid = as.character(as.integer(ppid)))%>%
+  mutate(trial_set = case_when(
+    between(trial_num, 194, 197) ~ "1",
+    between(trial_num, 198, 201) ~ "2",
+    between(trial_num, 290, 293) ~ "3",
+    TRUE ~ NA_character_
+  ))
+
+#Exp2 rotated pen
+data_toolhand <- "pen_rotated.csv"
+pen_rot <- fread(data_toolhand)
+pen_rotated <- pen_rot %>%
+  filter(between(trial_num, 2, 101) & !(between(trial_num, 10, 97))) %>%
+  #mutate(ppid = as.character(as.integer(ppid)))%>%
+  mutate(trial_set = case_when(
+    between(trial_num, 2, 5) ~ "1",
+    between(trial_num, 6, 9) ~ "2",
+    between(trial_num, 98, 101) ~ "3",
+    TRUE ~ NA_character_
+  ),
+  rotation = "30°")
+pen_rotated <- pen_rotated %>%
+  mutate(ppid = as.character(ppid))
+
+#Exp2 rotated hand after training with pen
+data_tool <- "pen_rotated.csv"
+hand_trainpen <- fread(data_tool)
+rotated_hand <- hand_trainpen %>%
+  filter(type=='rotated'& between(trial_num, 391, 438) & !(between(trial_num, 399, 434))) %>%
+  mutate(trial_set = case_when(
+    between(trial_num, 391, 394) ~ "1",
+    between(trial_num, 395, 398) ~ "2",
+    between(trial_num, 435, 438) ~ "3",
+    TRUE ~ NA_character_
+  ),
+  rotation = "30°")
+
+#combine the 30 and 60 group with new variable 'rotation'
+hand <- bind_rows(
+  mutate(hand_rot30, rotation = "30°"),
+  mutate(hand_rot60, rotation = "60°")
+)
+
+hand$group <- 'hand'
+pen_rotated$group <- 'pen'
+rotated_hand$group <- 'hand_pen'
+
+#Bind df rows to create one dataframe consisting of all three groups
+filtered_data <- bind_rows(hand, pen_rotated, rotated_hand)
+#Summary statistics
+sum_stats <- filtered_data %>%
+  mutate(diff = ifelse(!is.na(cursor_3cm_out_angle), cursor_3cm_out_angle - target_angle)) %>%
+  bind_rows(
+    pen_rotated %>%  # Calculate diff for pen_rotated dataframe
+      mutate(diff = ifelse(pen_present, pen_3cm_out_angle - target_angle)),
+    rotated_hand %>%  # Calculate diff for rotated_hand dataframe
+      mutate(diff = hand_3cm_out_angle - target_angle))%>%
+  filter(abs(diff) < 90)%>%
+  group_by(ppid, group, trial_set, rotation) %>%
+  summarise(mean = mean(diff, na.rm = TRUE))
+
+#Perform a 2x3x3 ANOVA
+anova_result <- aov(mean ~ trial_set * group * rotation, data = sum_stats)
+# Print the ANOVA summary
+summary(anova_result)
+#Since trial_set:group interaction is significant, perform post-hoc Tukey test
+tukey_results <- TukeyHSD(anova_result, which = "trial_set:group")
+print(tukey_results)
+```
+
+## No Cursor/ No Pen
+
+Experiment 1 - 30 degrees hand no cursor
+```{r}
+#30 degrees
+#filter the hand no cursors and create new cursor type and type
+hand_nocur30 <- hand_30 %>%
+  filter(type=="nocursor", block_num >7)%>%
+  mutate(
+    type = case_when(
+      trial_num <= 191 ~ "aligned",
+      trial_num >= 343 ~ "rotated"
+    ),
+    group = "hand 30",
+    ppid = as.character(as.integer(ppid)),
+    deviation = hand_final_angle - target_angle
+  )
+
+# Summary statistics
+hand30 <- hand_nocur30 %>%
+  group_by(ppid,type, group) %>%
+  summarise(
+    median = median(deviation, na.rm = TRUE),
+    mean = mean(deviation, na.rm = TRUE),
+    sd = sd(deviation, na.rm = TRUE)
+  )
+```
+Experiment 1 - 60 degrees hand no cursor
+```{r}
+#60 degrees
+#filter the hand no cursors and create new cursor type and type
+hand_nocur60 <- hand_60 %>%
+  filter(type=="nocursor", block_num >7)%>%
+  mutate(
+    type = case_when(
+      trial_num <= 191 ~ "aligned",
+      trial_num >= 343 ~ "rotated"
+    ),
+    group = "hand 60",
+    ppid = as.character(as.integer(ppid)),
+    deviation = hand_final_angle - target_angle
+  )
+
+#Summary statistics
+hand60 <- hand_nocur60 %>%
+  group_by(ppid,type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Experiment 2 - Pen aligned and rotated
+```{r}
+pen_aligned <- read.csv("pen_aligned.csv")
+pen_rotated <- read.csv("pen_rotated.csv")
+# Filter and add a "type" variable based on block numbers
+aligned <- pen_aligned %>%
+  filter(block_num %in% c(21, 36, 51)) %>%
+  mutate(
+    type = "aligned",
+    group = "pen",
+    deviation = pen_final_angle - target_angle)
+
+rotated <- pen_rotated %>%
+  filter(block_num %in% c(15, 30, 45)) %>%
+  mutate(
+    type = "rotated",
+    group = "pen",
+    deviation = pen_final_angle - target_angle)
+#combine both dfs
+pen_comb <- bind_rows(aligned, rotated)
+
+#Summary statistics
+pen <- pen_comb %>%
+  group_by(ppid,type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Experiment 2 - Hand after training with pen
+```{r}
+aligned_hp <- pen_aligned %>%
+  filter(block_num %in% c(18,33,48))%>%
+  mutate(
+    type = "aligned",
+    group = "hand_pen",
+    deviation = hand_final_angle - target_angle)
+
+rotated_hp <- pen_rotated %>%
+  filter(block_num %in% c(50))%>%
+  mutate(
+    type = "rotated",
+    group = "hand_pen",
+    deviation = hand_final_angle - target_angle)
+#combine both dfs
+handpen <- bind_rows(aligned_hp, rotated_hp)
+
+#Summary statistics
+hand_pen <- handpen %>%
+  group_by(ppid,type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Combine hand, pen, and hand after pen data frames and then perform 2x4 ANOVA
+```{r}
+#Combine the dataframe into one
+nocursor <- bind_rows(hand30,hand60,pen,hand_pen)
+nocursor <- nocursor %>%
+  mutate(trial_type = "no cursor")
+
+#Perform 2x4 ANOVA
+anova_result <- aov(mean ~ type * group, data = nocursor)
+# Summarize the ANOVA results
+summary(anova_result)
+
+tukey_results <- TukeyHSD(anova_result, which = "type:group")
+print(tukey_results)
+```
+
+
+## Localization
+
+Experiment 1 - 30 degrees hand localization
+```{r}
+#30 degrees
+#filter the hand localizations and create new type
+local_30 <- hand_30 %>%
+  filter(type=="localization", block_num >8)%>%
+  mutate(
+    type = case_when(
+    trial_num < 191 ~ "aligned",
+    trial_num > 194 ~ "rotated"),
+  ppid = as.character(as.integer(ppid)),
+  group = "hand 30",
+  deviation = localizing_angle - arc_aquired_angle)
+#Summary statistics
+local30_sum <- local_30 %>%
+  group_by(ppid, type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Experiment 1 - 60 degrees hand localization
+```{r}
+#60 degrees
+#filter the hand localizations and create new type
+local_60 <- hand_60 %>%
+  filter(type=="localization", block_num >8)%>%
+  mutate(
+    type = case_when(
+    trial_num < 191 ~ "aligned",
+    trial_num > 194 ~ "rotated"),
+  ppid = as.character(as.integer(ppid)),
+  group = "hand 60",
+  deviation = localizing_angle - arc_aquired_angle)
+#Summary statistics
+local60_sum <- local_60 %>%
+  group_by(ppid, type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Experiment 2 - Pen localization
+```{r}
+#Pen aligned
+# Filter and add a "type" variable based on block numbers
+a_local <- pen_aligned %>%
+  filter(block_num %in% c(9,13,24,28,39,43)) %>%
+  mutate(
+    type = "aligned",
+    group = "pen",
+    deviation = localizing_angle - arc_aquired_angle)
+
+r_local <- pen_rotated %>%
+  filter(block_num %in% c(3,7,18,22,33,37)) %>%
+  mutate(
+    type = "rotated",
+    group = "pen",
+    deviation = localizing_angle - arc_aquired_angle)
+#combine both dfs
+pen_comb <- bind_rows(a_local, r_local)
+#Summary statistics
+local_pen <- pen_comb %>%
+  group_by(ppid, type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Experiment 2 - Hand after training with pen
+```{r}
+alocal_hp <- pen_aligned %>%
+  filter(block_num %in% c(11,15,26,30,41,45))%>%
+  mutate(
+    type = "aligned",
+    group = "hand_pen",
+    deviation = localizing_angle - arc_aquired_angle)
+
+rlocal_hp <- pen_rotated %>%
+  filter(block_num %in% c(48))%>%
+  mutate(
+    type = "rotated",
+    group = "hand_pen",
+    deviation = localizing_angle - arc_aquired_angle)
+
+#combine both dfs
+handpen <- bind_rows(alocal_hp, rlocal_hp)
+#Summary statistics
+local_handpen <- handpen %>%
+  group_by(ppid, type, group) %>%
+  summarise(median = median(deviation, na.rm = TRUE),
+            mean = mean(deviation, na.rm = TRUE),
+            sd = sd(deviation, na.rm = TRUE))
+```
+Combine all four dataframes and perform 2x4 ANOVA
+```{r}
+localization <- bind_rows(local30_sum,local60_sum,local_pen,local_handpen)
+localization <- localization %>%
+  mutate(trial_type = "localization")
+
+#Perform 2x4 ANOVA
+anova_localization <- aov(mean ~ type * group, data = localization)
+# Summarize the ANOVA results
+summary(anova_localization)
+
+#type:group interaction is significant, so perform post-hoc Tukey test
+tukey_results <- TukeyHSD(anova_localization, which = "type:group")
+print(tukey_results)
+```
+
+# Localization & No Cursor relationship
+```{r}
+combined_dat <- bind_rows(localization, nocursor)%>%
+  filter(type == 'rotated')
+
+combine <- combined_dat %>%
+  mutate(
+    localization = ifelse(trial_type == "localization", mean, NA),
+    nocursor = ifelse(trial_type == "no cursor", mean * -1, NA)
+  )
+
+df <- combine %>%
+  group_by(ppid,group) %>%
+  summarise(
+    localization = mean(localization, na.rm = TRUE),
+    nocursor = mean(nocursor, na.rm = TRUE)
+  )
+
+# Plot
+custom_colors <- c("hand 30" = "violetred2", "hand 60" = "darkmagenta", "hand_pen" = "turquoise2", "pen" = "dodgerblue2")
+custom_labels <- c("hand 30" = "Hand 30°          r² = .023", "hand 60" = "Hand 60°          r² = .423", "hand_pen" = "Hand after pen   r² = .116", "pen" = "Pen                   r² = .073")
+custom_labels <- c("Hand 30°          r² = .023", "Hand 60°          r² = .423", "Pen                   r² = .073", "Hand after pen  r² = .116")
+
+ggplot(df, aes(x = nocursor, y = localization, color = group)) +
+  geom_point() + # Scatterplot
+  geom_smooth(method = "lm", se = FALSE) + # Add regression line
+  labs(x = "Angular reach deviation no cursor/pen (°)", y = "Changes in localization (°)", color = NULL) + # Axis and legend labels
+  scale_color_manual(values = custom_colors, labels = custom_labels)+
+  theme_classic() +
+  #theme(legend.position = "none") +
+  theme(text = element_text(size = 11))
+  #theme(
+    #legend.position = c(1.0, 1.05), # Adjust legend position
+   # legend.justification = c(1, 1) # Justify legend to top right
+ # )
+```
+Fit regression model
+```{r}
+# Fit linear regression model with group variable
+lm_model <- lm(localization ~ nocursor + group, data = df)
+
+# Print regression model summary
+summary(lm_model)
+```
+
