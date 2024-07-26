@@ -18,6 +18,13 @@ library(magrittr)
 library(tidyr)
 ```
 
+Load local scripts:
+```{r}
+source('R/data.R')
+source('R/statistics.R')
+```
+
+
 # Reach to Target
 
 ## Hand (Experiment 1)
