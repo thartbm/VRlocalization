@@ -1,20 +1,21 @@
 
 
-getData <- function(conditions=c('hand30','hand60','pen30'), phases=c('aligned','rotated'),trialtypes=c('reach','nocursor','localization')) {
+getData <- function(conditions=c('hand30','hand60','pen30'), phases=c('aligned','rotated'),trialtypes=c('reach','nocursor','localization'),baseline=TRUE) {
   
   dfs <- list() 
   
   for (condition in conditions) {
-    if (condition == 'hand30') { dfs <- c(dfs, readFiles(files=c('data/hand_30.csv'), phases=phases, trialtypes=trialtypes)) }
-    if (condition == 'hand60') { dfs <- c(dfs, readFiles(files=c('data/hand_60.csv'), phases=phases, trialtypes=trialtypes)) }
-    if (condition == 'pen30')  { dfs <- c(dfs, readFiles(files=c('data/pen_aligned.csv', 'data/pen_rotated.csv'), phases=phases, trialtypes=trialtypes)) }
+    if (condition == 'hand30') { dfs[[length(dfs)+1]] <- readFiles(files=c('data/hand_30.csv'), phases=phases, trialtypes=trialtypes, baseline=baseline) }
+    if (condition == 'hand60') { dfs[[length(dfs)+1]] <- readFiles(files=c('data/hand_60.csv'), phases=phases, trialtypes=trialtypes, baseline=baseline) }
+    if (condition == 'pen30')  { dfs[[length(dfs)+1]] <- readFiles(files=c('data/pen_aligned.csv', 'data/pen_rotated.csv'), phases=phases, trialtypes=trialtypes, baseline=baseline) }
   }
   
+  return(dfs)
   
 }
 
 
-readFiles <- function(files, phases, trialtypes) {
+readFiles <- function(files, phases, trialtypes, baseline) {
   
   df <- NA
   
@@ -29,6 +30,12 @@ readFiles <- function(files, phases, trialtypes) {
   }
   
   
+  print(files)
+  if (baseline) {
+    df <- applyBaseline(df)
+  }
+  
+  return(df)
   
 }
 
@@ -55,11 +62,14 @@ prepareData <- function(df, file) {
     df$unid <- sprintf('p30_%s', df$ppid)
     
     # remove break or instruction "trials" / empty lines
-    df <- df[which(pen_aligned$type != ''),]
+    df <- df[which(df$type != ''),]
   }
   
   # get block numbers / trial set numbers
   df <- addBlockNumbers(df)
+  
+  # add trial type:
+  df <- addTrialType(df)
   
   return(df)
 
@@ -83,6 +93,24 @@ addBlockNumbers <- function(df) {
   df$block_idx <- map[df$trial_num]
   
   return(df)
+  
+}
+
+addTrialType <- function(df) {
+  
+  df$trialtype <- df$type
+  
+  df$trialtype[which(df$trialtype == 'aligned')] <- 'reach'
+  df$trialtype[which(df$trialtype == 'rotated')] <- 'reach'
+  
+  return(df)
+  
+}
+
+applyBaseline <- function(df) {
+  
+  print(class(df$trialtype))
+  print(unique(df$trialtype))
   
 }
 
