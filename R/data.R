@@ -8,7 +8,7 @@ getCurrentData <- function() {
                                                 'hand_60.csv', 
                                                 'pen_aligned.csv',
                                                 'pen_rotated.csv',
-                                                'omnibus_hand.csv')),
+                                                'omnibus_hand.csv')), # what is in this file?
                          folder = 'data',
                          overwrite = TRUE)
 
@@ -107,6 +107,10 @@ prepareData <- function(df, file) {
     # add effector
     df$effector <- 'hand'
     df$effector[which(df$pen_present)] <- 'pen'
+    
+    # hand-after-pen should have unique participant IDs for ANOVAs to work:
+    df$unid[which(df$effector == 'hand')] <- sprintf('hap30_%s', df$ppid[which(df$effector == 'hand')])
+    
   }
   
   # get block numbers / trial set numbers
