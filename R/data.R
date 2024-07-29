@@ -63,7 +63,7 @@ readFiles <- function(files, phases, trialtypes, baseline) {
     df <- applyBaseline(df)
   }
   
-  print(length(names(df)))
+  # print(length(names(df)))
   
   return(df)
   
@@ -218,8 +218,8 @@ applyBaseline <- function(df) {
         
         targets <- unique(df$target_angle)
         
-        print(c(condition, effector, trialtype))
-        print(c(length(AL_trialset_idx), length(RO_trialset_idx)))
+        # print(c(condition, effector, trialtype))
+        # print(c(length(AL_trialset_idx), length(RO_trialset_idx)))
         
         for (pp in unique(df$unid[AL_trialset_idx])) {
           
@@ -228,7 +228,7 @@ applyBaseline <- function(df) {
             AL_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% AL_trialset_idx)
             RO_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% RO_trialset_idx)
             
-            if (length(AL_idx) == 0) {print(c(pp, target))}
+            # if (length(AL_idx) == 0) {print(c(pp, target))}
             
             baseline_bias <- median( df$deviation[AL_idx], na.rm=TRUE )
             
