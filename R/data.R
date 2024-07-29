@@ -1,7 +1,7 @@
 
 # download data from OSF -----
 
-getCurrentData <- function() {
+downloadCurrentData <- function() {
   
   Reach::downloadOSFdata(repository = 'vzds5',
                          filelist = list('/'=c( 'hand_30.csv',
@@ -50,12 +50,20 @@ readFiles <- function(files, phases, trialtypes, baseline) {
   }
   
   if (length(files) > 1) {
+    # pen data
     df <- addDeviations(df)
+  } else {
+    df <- df[,names(df)[which(!names(df) %in% c('X'))]]
+    df$pen_present <- FALSE
+    df$pen_3cm_out_angle <- NA
+    df$pen_final_angle <- NA
   }
   
   if (baseline) {
     df <- applyBaseline(df)
   }
+  
+  print(length(names(df)))
   
   return(df)
   
@@ -109,8 +117,9 @@ prepareData <- function(df, file) {
     df$effector[which(df$pen_present)] <- 'pen'
     
     # hand-after-pen should have unique participant IDs for ANOVAs to work:
-    df$unid[which(df$effector == 'hand')] <- sprintf('hap30_%s', df$ppid[which(df$effector == 'hand')])
-    
+    hand_idx <- which(df$effector == 'hand')
+    df$unid[hand_idx] <- sprintf('hap30_%s', df$ppid[which(df$effector == 'hand')])
+    df$condition[hand_idx] <- 'hap30'
   }
   
   # get block numbers / trial set numbers
@@ -120,7 +129,7 @@ prepareData <- function(df, file) {
   df <- addTrialType(df)
   
   # remove practice blocks:
-  df <- removePractice(df)
+  df <- removePractice(df, file)
   
   return(df)
   
@@ -158,9 +167,11 @@ addTrialType <- function(df) {
   
 }
 
-removePractice <- function(df) {
+removePractice <- function(df, file) {
   
-  df <- df[which(df$block_num > 7),]
+  if (file %in% c('data/hand_30.csv', 'data/hand_60.csv', 'data/pen_aligned.csv')) {
+    df <- df[which(df$block_num > 7),]
+  }
   
   return(df)
   
@@ -196,35 +207,38 @@ addDeviations <- function(df) {
 
 applyBaseline <- function(df) {
   
-  for (effector in unique(df$effector)) {
+  for (condition in unique(df$condition)) {
     
-    for (trialtype in unique(df$trialtype[which(df$phase == 'aligned' & df$effector == effector)])) {
+    for (effector in unique(df$effector)) {
       
-      print(c(effector, trialtype))
-      
-      
-      
-      AL_trialset_idx <- unique(df$trialset_idx[which(df$phase == 'aligned' & df$trialtype == trialtype)])
-      RO_trialset_idx <- unique(df$trialset_idx[which(df$phase == 'rotated' & df$trialtype == trialtype)])
-      
-      print(range(AL_trialset_idx))
-      print(range(RO_trialset_idx))
-      
-      targets <- unique(df$target_angle)
-      
-      for (pp in unique(df$unid)) {
+      for (trialtype in unique(df$trialtype[which(df$phase == 'aligned' & df$effector == effector & df$condition == condition)])) {
         
-        for (target in targets) {
+        AL_trialset_idx <- unique(df$trialset_idx[which(df$phase == 'aligned' & df$trialtype == trialtype & df$condition == condition)])
+        RO_trialset_idx <- unique(df$trialset_idx[which(df$phase == 'rotated' & df$trialtype == trialtype & df$condition == condition)])
+        
+        targets <- unique(df$target_angle)
+        
+        print(c(condition, effector, trialtype))
+        print(c(length(AL_trialset_idx), length(RO_trialset_idx)))
+        
+        for (pp in unique(df$unid[AL_trialset_idx])) {
           
-          AL_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% AL_trialset_idx)
-          RO_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% RO_trialset_idx)
-          
-          baseline_bias <- median( df$deviation[AL_idx], na.rm=TRUE )
-          
-          df$deviation[RO_idx] <- df$deviation[RO_idx] - baseline_bias
+          for (target in targets) {
+            
+            AL_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% AL_trialset_idx)
+            RO_idx <- which(df$unid == pp & df$target_angle == target & df$trialset_idx %in% RO_trialset_idx)
+            
+            if (length(AL_idx) == 0) {print(c(pp, target))}
+            
+            baseline_bias <- median( df$deviation[AL_idx], na.rm=TRUE )
+            
+            # print(c(df$condition[1], effector, trialtype, target, baseline_bias))
+            
+            df$deviation[RO_idx] <- df$deviation[RO_idx] - baseline_bias
+            
+          }
           
         }
-        
         
       }
       
