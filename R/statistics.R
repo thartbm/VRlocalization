@@ -25,11 +25,19 @@ reachANOVA <- function() {
   aovdf$condition <- as.factor(aovdf$condition)
   aovdf$unid      <- as.factor(aovdf$unid)
   
-  afex::aov_ez( id = 'unid',
-                dv = 'deviation',
-                data = aovdf,
-                between = 'condition',
-                within = 'trialset_idx')
+  aov_mod <- afex::aov_ez( id = 'unid',
+                           dv = 'deviation',
+                           data = aovdf,
+                           between = 'condition',
+                           within = 'trialset_idx')
+  
+  print(aov_mod)
+  
+  # emmeans::emmeans(aov_mod, ~ condition)
+  
+  cat('\nPOST-HOC on only the effect of condition:\n\n')
+  
+  print(pairs(emmeans::emmeans(aov_mod, ~ condition)))
   
 }
 
